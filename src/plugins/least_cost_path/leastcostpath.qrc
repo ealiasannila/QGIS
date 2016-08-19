@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/leastcostpath/" >
+        <file>leastcostpath.png</file>
+    </qresource>
+</RCC>

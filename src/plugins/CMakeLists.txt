@@ -40,3 +40,6 @@ IF (QT_MOBILITY_SENSORS_FOUND)
 ENDIF (QT_MOBILITY_SENSORS_FOUND)
 
 # headers installed in qgis_core target
+
+
+SUBDIRS (least_cost_path)

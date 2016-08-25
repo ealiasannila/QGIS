@@ -79,18 +79,7 @@ QString LeastCostPathGui::outputFile()
 }
 
 
-QString LeastCostPathGui::costSurface()
-{
-  //AIHEUTTAA CRASHIN
-  QgsMapLayer* inputLayer = QgsMapLayerRegistry::instance()->mapLayer( mCostSurfaceComboBox->itemData( mCostSurfaceComboBox->currentIndex() ).toString() );
-   if ( !inputLayer )
-  {
-    return "";
-  }
 
-  QString inputFilePath = inputLayer->source();
-  return inputFilePath;
-}
 
 
 void LeastCostPathGui::on_buttonBox_rejected() {

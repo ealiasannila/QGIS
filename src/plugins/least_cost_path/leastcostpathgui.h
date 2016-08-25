@@ -24,7 +24,6 @@ class LeastCostPathGui : public QDialog, private Ui::LeastCostPathGuiBase
   public:
     LeastCostPathGui( QWidget* parent = 0, Qt::WindowFlags fl = 0 );
     QString outputFile();
-    QString costSurface();
     ~LeastCostPathGui();
 
   private:

@@ -1,10 +1,10 @@
 /***************************************************************************
-  leastcostpath.cpp
-  LCP analysis over weighted areas for polygon data
-  -------------------
-         begin                : [PluginDate]
-         copyright            : [(C) Your Name and Date]
-         email                : [Your Email]
+ leastcostpath.cpp
+ LCP analysis over weighted areas for polygon data
+ -------------------
+ begin                : [PluginDate]
+ copyright            : [(C) Your Name and Date]
+ email                : [Your Email]
 
  ***************************************************************************
  *                                                                         *
@@ -18,7 +18,6 @@
 //
 // QGIS Specific includes
 //
-
 #include <qgisinterface.h>
 #include <qgisgui.h>
 
@@ -34,11 +33,14 @@
 
 //TEST INCLUDES
 #include <QTextStream>
+#include "qgsmaplayer.h"
+#include "qgsvectorlayer.h"
+#include "qgsgeometry.h"
 
-static const QString sName = QObject::tr( "LCP" );
-static const QString sDescription = QObject::tr( "LCP analysis over weighted areas for polygon data" );
-static const QString sCategory = QObject::tr( "Vector" );
-static const QString sPluginVersion = QObject::tr( "Version 0.1" );
+static const QString sName = QObject::tr("LCP");
+static const QString sDescription = QObject::tr("LCP analysis over weighted areas for polygon data");
+static const QString sCategory = QObject::tr("Vector");
+static const QString sPluginVersion = QObject::tr("Version 0.1");
 static const QgisPlugin::PLUGINTYPE sPluginType = QgisPlugin::UI;
 static const QString sPluginIcon = ":/leastcostpath/leastcostpath.png";
 
@@ -53,14 +55,11 @@ static const QString sPluginIcon = ":/leastcostpath/leastcostpath.png";
  * an interface object that provides access to exposed functions in QGIS.
  * @param theQGisInterface - Pointer to the QGIS interface object
  */
-LeastCostPath::LeastCostPath( QgisInterface * theQgisInterface ):
-    QgisPlugin( sName, sDescription, sCategory, sPluginVersion, sPluginType ),
-    mQGisIface( theQgisInterface )
-{
+LeastCostPath::LeastCostPath(QgisInterface * theQgisInterface) :
+		QgisPlugin(sName, sDescription, sCategory, sPluginVersion, sPluginType), mQGisIface(theQgisInterface) {
 }
 
-LeastCostPath::~LeastCostPath()
-{
+LeastCostPath::~LeastCostPath() {
 
 }
 
@@ -68,52 +67,64 @@ LeastCostPath::~LeastCostPath()
  * Initialize the GUI interface for the plugin - this is only called once when the plugin is
  * added to the plugin registry in the QGIS application.
  */
-void LeastCostPath::initGui()
-{
+void LeastCostPath::initGui() {
 
-  // Create the action for tool
-  mQActionPointer = new QAction( QIcon( ":/leastcostpath/leastcostpath.png" ), tr( "LCP" ), this );
-  mQActionPointer->setObjectName( "mQActionPointer" );
-  // Set the what's this text
-  mQActionPointer->setWhatsThis( tr( "Replace this with a short description of what the plugin does" ) );
-  // Connect the action to the run
-  connect( mQActionPointer, SIGNAL( triggered() ), this, SLOT( run() ) );
-  // Add the icon to the toolbar
-  mQGisIface->addToolBarIcon( mQActionPointer );
-  mQGisIface->addPluginToMenu( tr( "&LCP" ), mQActionPointer );
+	// Create the action for tool
+	mQActionPointer = new QAction(QIcon(":/leastcostpath/leastcostpath.png"), tr("LCP"), this);
+	mQActionPointer->setObjectName("mQActionPointer");
+	// Set the what's this text
+	mQActionPointer->setWhatsThis(tr("Replace this with a short description of what the plugin does"));
+	// Connect the action to the run
+	connect(mQActionPointer, SIGNAL(triggered()), this, SLOT(run()));
+	// Add the icon to the toolbar
+	mQGisIface->addToolBarIcon(mQActionPointer);
+	mQGisIface->addPluginToMenu(tr("&LCP"), mQActionPointer);
 
 }
 //method defined in interface
-void LeastCostPath::help()
-{
-  //implement me!
+void LeastCostPath::help() {
+	//implement me!
 }
 
 // Slot called when the menu item is triggered
 // If you created more menu items / toolbar buttons in initiGui, you should
 // create a separate handler for each action - this single run() method will
 // not be enough
-void LeastCostPath::run()
-{
-  LeastCostPathGui *myPluginGui = new LeastCostPathGui( mQGisIface->mainWindow(), QgisGui::ModalDialogFlags );
-  myPluginGui->setAttribute( Qt::WA_DeleteOnClose );
-  myPluginGui->show();
-  if ( myPluginGui->exec() == QDialog::Accepted )
-    {
-	  QTextStream out(stdout);
-	  out << myPluginGui->costSurface();
-    }
+void LeastCostPath::run() {
+	LeastCostPathGui *myPluginGui = new LeastCostPathGui(mQGisIface->mainWindow(), QgisGui::ModalDialogFlags);
+	myPluginGui->setAttribute(Qt::WA_DeleteOnClose);
+	myPluginGui->show();
+	if (myPluginGui->exec() == QDialog::Accepted) {
+		QTextStream out(stdout);
+		out<<"Hello, printing active layer\n";
+		QgsVectorLayer* activeL = (QgsVectorLayer*) this->mQGisIface->activeLayer();
+		QString activeName = activeL->name();
+		out<<"Name of layer: "<<activeName<<"\n";
+		QgsFeatureIterator fitor = activeL->getFeatures();
+		QgsFeature f;
+		while (fitor.nextFeature(f)) {
+			out<<"Feature: "<<f.id()<<"\n";
+			QgsGeometry geom = f.geometry();
+			QVector<QgsPolyline> rings = geom.asPolygon();
+			out<<rings.size()<<" rings\n";
+			for (QVector<QgsPoint> points : rings) {
+				out << points.size()<<" points\n";
+				out<<"ringchange\n";
+				for (QgsPoint point : points) {
+					out<<">  "<<point.x()<<"<>"<<point.y()<<"\n";
+				}
+			}
+		}
+	}
 }
 
 // Unload the plugin by cleaning up the GUI
-void LeastCostPath::unload()
-{
-  // remove the GUI
-  mQGisIface->removePluginMenu( "&LCP", mQActionPointer );
-  mQGisIface->removeToolBarIcon( mQActionPointer );
-  delete mQActionPointer;
+void LeastCostPath::unload() {
+	// remove the GUI
+	mQGisIface->removePluginMenu("&LCP", mQActionPointer);
+	mQGisIface->removeToolBarIcon(mQActionPointer);
+	delete mQActionPointer;
 }
-
 
 //////////////////////////////////////////////////////////////////////////
 //
@@ -125,55 +136,46 @@ void LeastCostPath::unload()
 //
 //////////////////////////////////////////////////////////////////////////
 
-
 /**
  * Required extern functions needed  for every plugin
  * These functions can be called prior to creating an instance
  * of the plugin class
  */
 // Class factory to return a new instance of the plugin class
-QGISEXTERN QgisPlugin * classFactory( QgisInterface * theQgisInterfacePointer )
-{
-  return new LeastCostPath( theQgisInterfacePointer );
+QGISEXTERN QgisPlugin * classFactory(QgisInterface * theQgisInterfacePointer) {
+	return new LeastCostPath(theQgisInterfacePointer);
 }
 // Return the name of the plugin - note that we do not user class members as
 // the class may not yet be insantiated when this method is called.
-QGISEXTERN QString name()
-{
-  return sName;
+QGISEXTERN QString name() {
+	return sName;
 }
 
 // Return the description
-QGISEXTERN QString description()
-{
-  return sDescription;
+QGISEXTERN QString description() {
+	return sDescription;
 }
 
 // Return the category
-QGISEXTERN QString category()
-{
-  return sCategory;
+QGISEXTERN QString category() {
+	return sCategory;
 }
 
 // Return the type (either UI or MapLayer plugin)
-QGISEXTERN int type()
-{
-  return sPluginType;
+QGISEXTERN int type() {
+	return sPluginType;
 }
 
 // Return the version number for the plugin
-QGISEXTERN QString version()
-{
-  return sPluginVersion;
+QGISEXTERN QString version() {
+	return sPluginVersion;
 }
 
-QGISEXTERN QString icon()
-{
-  return sPluginIcon;
+QGISEXTERN QString icon() {
+	return sPluginIcon;
 }
 
 // Delete ourself
-QGISEXTERN void unload( QgisPlugin * thePluginPointer )
-{
-  delete thePluginPointer;
+QGISEXTERN void unload(QgisPlugin * thePluginPointer) {
+	delete thePluginPointer;
 }

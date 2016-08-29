@@ -5,6 +5,16 @@
 SET (leastcostpath_SRCS
      leastcostpath.cpp
      leastcostpathgui.cpp
+    testclass.cpp
+    lib/common/shapes.cc
+    lib/sweep/advancing_front.cc
+    lib/sweep/cdt.cc
+    lib/sweep/sweep.cc
+    lib/sweep/sweep_context.cc
+    src/Coords.cpp
+    src/Funnel.cpp
+    src/lcpfinder.cpp
+
 )
 
 SET (leastcostpath_UIS leastcostpathguibase.ui)
@@ -12,6 +22,14 @@ SET (leastcostpath_UIS leastcostpathguibase.ui)
 SET (leastcostpath_MOC_HDRS
      leastcostpath.h
      leastcostpathgui.h
+    testclass.h
+    lib/poly2tri.h
+    src/minHeap.h
+    src/Coords.h
+    src/Funnel.h
+    src/defs.h
+    src/geomfunc.h
+    src/lcpfinder.h
 )
 
 SET (leastcostpath_RCCS  leastcostpath.qrc)

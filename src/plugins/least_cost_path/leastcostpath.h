@@ -100,6 +100,7 @@ class LeastCostPath: public QObject, public QgisPlugin
     // ADD YOUR OWN PROPERTY DECLARATIONS AFTER THIS POINT.....
     //
     ////////////////////////////////////////////////////////////////////
+    int lcpmain();
 };
 
 #endif //LeastCostPath_H

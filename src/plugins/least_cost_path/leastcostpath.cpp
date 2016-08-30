@@ -20,9 +20,9 @@
 //
 #include <qgisinterface.h>
 #include <qgisgui.h>
-
 #include "leastcostpath.h"
 #include "leastcostpathgui.h"
+#include "qgsmessagebar.h"
 
 //
 // Qt4 Related Includes
@@ -37,10 +37,12 @@
 #include "qgsvectorlayer.h"
 #include "qgsgeometry.h"
 
-#include "lib/poly2tri.h"
-#include "src/Coords.h"
-#include "src/lcpfinder.h"
-#include "src/geomfunc.h"
+#include "shapefil.h"
+
+#include "../../../../lcpc/lib/poly2tri.h"
+#include "../../../../lcpc/src/Coords.h"
+#include "../../../../lcpc/src/lcpfinder.h"
+#include "../../../../lcpc/src/geomfunc.h"
 
 static const QString sName = QObject::tr("LCP");
 static const QString sDescription = QObject::tr("LCP analysis over weighted areas for polygon data");
@@ -91,7 +93,9 @@ void LeastCostPath::help() {
     //implement me!
 }
 
-int LeastCostPath::lcpmain() {
+
+
+int LeastCostPath::lcpmain(QgsVectorLayer* costSurface,QgsVectorLayer* startLayer, QgsVectorLayer* targetLayer) {
     QTextStream out(stdout);
     /*
      * HOW TO MAKE FAST:
@@ -105,133 +109,93 @@ int LeastCostPath::lcpmain() {
      *TODO Weakly simple polygon splitting
      *TODO Performance...
      *
-        out<<"Hello, printing active layer\n";
-        QgsVectorLayer* activeL = (QgsVectorLayer*) this->mQGisIface->activeLayer();
-        QString activeName = activeL->name();
-        out<<"Name of layer: "<<activeName<<"\n";
-        QgsFeatureIterator fitor = activeL->getFeatures();
-        QgsFeature f;
-        while (fitor.nextFeature(f)) {
-            out<<"Feature: "<<f.id()<<"\n";
-            QgsGeometry geom = f.geometry();
-            QVector<QgsPolyline> rings = geom.asPolygon();
-            out<<rings.size()<<" rings\n";
-            for (QVector<QgsPoint> points : rings) {
-                out << points.size()<<" points\n";
-                out<<"ringchange\n";
-                for (QgsPoint point : points) {
-                    out<<">  "<<point.x()<<"<>"<<point.y()<<"\n";
-                }
-            }
-        }
-     */
+      */
 
 
     LcpFinder finder;
-    out <<"Finder created\n";
 
-    QgsVectorLayer* activeL = (QgsVectorLayer*) this->mQGisIface->activeLayer();
-    QString activeName = activeL->name();
-    out<<"Name of layer: "<<activeName<<"\n";
-    QgsFeatureIterator fitor = activeL->getFeatures();
+
+    QgsFeatureIterator fitor = costSurface->getFeatures();
     QgsFeature f;
     std::vector<std::vector<std::vector<p2t::Point*>>> polygons;
-    double sx = 0;
-    double sy = 0;
-    double tx = 0;
-    double ty = 0;
+    std::vector<p2t::Point*> steinerPoints;
 
     int pi = -1;
     while (fitor.nextFeature(f)) {
         pi++;
         polygons.push_back(std::vector<std::vector<p2t::Point*>>{});
-        out<<"Feature: "<<f.id()<<"\n";
         QgsGeometry geom = f.geometry();
         QVector<QgsPolyline> rings = geom.asPolygon();
-        out<<rings.size()<<" rings\n";
         int ri = -1;
         for (QVector<QgsPoint> points : rings) {
             ri++;
             polygons.at(pi).push_back(std::vector<p2t::Point*>{});
-            out << points.size()<<" points\n";
-            out<<"ringchange\n";
             for (QgsPoint point : points) {
 
-                if(sy == 0){
-                    sy = point.y();
-                    sx = point.x();
-                }else if(tx == 0){
-                    ty = point.y();
-                    tx = point.x();
-                }
-
                 polygons.at(pi).at(ri).push_back(new p2t::Point { point.x(), point.y() });
-                out<<">  "<<point.x()<<"<>"<<point.y()<<"\n";
             }
             polygons.at(pi).at(ri).pop_back();
         }
-        finder.addPolygon(pi,std::vector<p2t::Point*>{}, polygons.at(pi), 1);
-
-        for (std::vector<p2t::Point*> vec : polygons.at(pi)) {
-            for (p2t::Point* p : vec) {
-                delete p;
-            }
-        }
-
+        intermidiatePoints(&polygons.at(pi), 500);
+        finder.addPolygon(polygons.at(pi), 1);
+    }
+    std::vector<Coords> targets;
+    fitor = targetLayer->getFeatures();
+    while(fitor.nextFeature(f)){
+        QgsGeometry geom = f.geometry();
+        QgsPoint point = geom.asPoint();
+        targets.push_back(Coords(point.x(),point.y()));
+        p2t::Point* sp = new p2t::Point(point.x(),point.y());
+        finder.addSteinerPoint(sp,0);
+        steinerPoints.push_back(sp);
     }
 
+    fitor = startLayer->getFeatures();
+    fitor.nextFeature(f);
+    QgsGeometry geom = f.geometry();
+    QgsPoint point = geom.asPoint();
+    p2t::Point* sp = new p2t::Point(point.x(),point.y());
+    finder.addSteinerPoint(sp,0);
+    steinerPoints.push_back(sp);
 
 
+    std::vector<Coords> results = finder.leastCostPath(Coords(point.x(),point.y()), targets);
+
+    //FREE STEINER POINTS AND POLYGONS
+
+    out << "lcp done\n";
 
 
-    /*
-    std::vector<std::vector<p2t::Point*>> p1 = { { new p2t::Point { 0, 0 }, new p2t::Point(1, 0), new p2t::Point(1, 1), new p2t::Point(0, 1) } };
-    std::vector<std::vector<p2t::Point*>> p2 = { { new p2t::Point { 0, 1 }, new p2t::Point(1, 1), new p2t::Point(1, 2), new p2t::Point(0, 2) } };
+    SHPHandle hSHP = SHPCreate( "/home/elias/Desktop/lcp.shp", SHPT_ARC);
+    out <<"handle created\n";
 
-    out <<"Polygons created\n";
-    intermidiatePoints(&p1, 0.5);
-    intermidiatePoints(&p2, 0.5);
-
-    out <<"Intermidiate points added\n";
-
-    std::vector<p2t::Point*> stp = {new p2t::Point{0.5,0.5}};
-
-    out <<"Steiner points created\n";
-
-    finder.addPolygon(0,stp, p1, 1);
-    finder.addPolygon(1,std::vector<p2t::Point*>{}, p2, 1);
-
-    out <<"Polygons added\n";
-
-    for (std::vector<p2t::Point*> vec : p1) {
-        for (p2t::Point* p : vec) {
-            delete p;
-        }
-    }
-
-    for (std::vector<p2t::Point*> vec : p2) {
-        for (p2t::Point* p : vec) {
-            delete p;
-        }
-    }
-
-    for (p2t::Point* p : stp) {
-        delete p;
-    }
-    */
-
-    out <<"Polygons freed\n";
-
-    std::vector<Coords> targets{Coords(tx,ty)};
-    std::vector<Coords> path = finder.leastCostPath(Coords(sx, sy), targets);
-    for (Coords goal : path) {
+    for (unsigned int i = 0; i<results.size(); i++) {
+        std::vector<double> x;
+        std::vector<double> y;
+        Coords goal = results[i];
+        std::cout<<"goal"<<goal.toString()<<std::endl;
         while (goal.getPred() != 0) {
+            std::cout<<"in while!\n";
+            x.push_back(goal.getX());
+            y.push_back(goal.getY());
             out << "x: " << goal.getX() << " y: " << goal.getY() << "cost: " << goal.getToStart() << "\n";
             goal = *goal.getPred();
         }
-        out << "x: " << goal.getX() << " y: " << goal.getY() << "cost: " << goal.getToStart() << "\n";
+        x.push_back(goal.getX());
+        y.push_back(goal.getY());
+        out << "x: " << goal.getX() << " y: " << goal.getY() << "cost: " << goal.getToStart() << "\n" ;
+        double *xp = &x[0];
+        double *yp = &y[0];
+        out<<"size: "<<x.size()<<"\n";
+        SHPObject* psObject = SHPCreateSimpleObject(SHPT_ARC, x.size(),xp, yp, NULL );
+        int o = SHPWriteObject(hSHP, -1, psObject );
+        out << "wrote: "<<o<<"\n";
+        SHPDestroyObject(psObject);
 
     }
+    SHPClose(hSHP);
+    mQGisIface->addVectorLayer( "/home/elias/Desktop/lcp.shp", "LCP", "ogr");
+
 
     return 0;
 }
@@ -243,16 +207,22 @@ int LeastCostPath::lcpmain() {
 // create a separate handler for each action - this single run() method will
 // not be enough
 void LeastCostPath::run() {
-    LeastCostPathGui *myPluginGui = new LeastCostPathGui(mQGisIface->mainWindow(), QgisGui::ModalDialogFlags);
-    myPluginGui->setAttribute(Qt::WA_DeleteOnClose);
-    myPluginGui->show();
-    if (myPluginGui->exec() == QDialog::Accepted) {
-        QTextStream out(stdout);
+    LeastCostPathGui d( mQGisIface->mainWindow(), QgisGui::ModalDialogFlags);
 
-        out<<"finished: "<<lcpmain();
-
-
+    //check that dialog found a suitable vector layer
+    if ( !d.costSurfaceLayer() )
+    {
+        mQGisIface->messageBar()->pushMessage( tr( "Layer not found" ), tr( "Cost Surface plugin requires at least one polygon layer" ), QgsMessageBar::INFO, mQGisIface->messageTimeout() );
+        return;
     }
+
+    if ( d.exec() != QDialog::Accepted )
+    {
+        return;
+    }
+
+    lcpmain(d.costSurfaceLayer(), d.startLayer(), d.targetLayer());
+
 }
 
 // Unload the plugin by cleaning up the GUI

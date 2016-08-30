@@ -6,14 +6,14 @@ SET (leastcostpath_SRCS
      leastcostpath.cpp
      leastcostpathgui.cpp
     testclass.cpp
-    lib/common/shapes.cc
-    lib/sweep/advancing_front.cc
-    lib/sweep/cdt.cc
-    lib/sweep/sweep.cc
-    lib/sweep/sweep_context.cc
-    src/Coords.cpp
-    src/Funnel.cpp
-    src/lcpfinder.cpp
+    ../../../../lcpc/lib/common/shapes.cc
+    ../../../../lcpc/lib/sweep/advancing_front.cc
+    ../../../../lcpc/lib/sweep/cdt.cc
+    ../../../../lcpc/lib/sweep/sweep.cc
+    ../../../../lcpc/lib/sweep/sweep_context.cc
+    ../../../../lcpc/src/Coords.cpp
+    ../../../../lcpc/src/Funnel.cpp
+    ../../../../lcpc/src/lcpfinder.cpp
 
 )
 
@@ -23,13 +23,13 @@ SET (leastcostpath_MOC_HDRS
      leastcostpath.h
      leastcostpathgui.h
     testclass.h
-    lib/poly2tri.h
-    src/minHeap.h
-    src/Coords.h
-    src/Funnel.h
-    src/defs.h
-    src/geomfunc.h
-    src/lcpfinder.h
+    ../../../../lcpc/lib/poly2tri.h
+    ../../../../lcpc/src/minHeap.h
+    ../../../../lcpc/src/Coords.h
+    ../../../../lcpc/src/Funnel.h
+    ../../../../lcpc/src/defs.h
+    ../../../../lcpc/src/geomfunc.h
+    ../../../../lcpc/src/lcpfinder.h
 )
 
 SET (leastcostpath_RCCS  leastcostpath.qrc)

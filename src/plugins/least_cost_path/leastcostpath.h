@@ -40,7 +40,7 @@
 
 //QGIS includes
 #include "../qgisplugin.h"
-
+#include "qgsvectorlayer.h"
 //forward declarations
 class QAction;
 class QToolBar;
@@ -100,7 +100,7 @@ class LeastCostPath: public QObject, public QgisPlugin
     // ADD YOUR OWN PROPERTY DECLARATIONS AFTER THIS POINT.....
     //
     ////////////////////////////////////////////////////////////////////
-    int lcpmain();
+    int lcpmain(QgsVectorLayer* costSurface, QgsVectorLayer *startLayer, QgsVectorLayer *targetLayer);
 };
 
 #endif //LeastCostPath_H

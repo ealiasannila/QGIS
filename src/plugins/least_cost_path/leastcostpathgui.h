@@ -15,6 +15,10 @@
 #include <QDialog>
 #include <ui_leastcostpathguibase.h>
 
+#include "qgsvectorlayer.h"
+#include "qgsmaplayercombobox.h"
+
+
 /**
 @author Tim Sutton
 */
@@ -22,8 +26,11 @@ class LeastCostPathGui : public QDialog, private Ui::LeastCostPathGuiBase
 {
     Q_OBJECT
   public:
-    LeastCostPathGui( QWidget* parent = 0, Qt::WindowFlags fl = 0 );
+    LeastCostPathGui( QWidget* parent, Qt::WindowFlags fl);
     QString outputFile();
+    QgsVectorLayer* costSurfaceLayer() const;
+    QgsVectorLayer* startLayer() const;
+    QgsVectorLayer* targetLayer() const;
     ~LeastCostPathGui();
 
   private:
@@ -34,6 +41,8 @@ class LeastCostPathGui : public QDialog, private Ui::LeastCostPathGuiBase
     void on_buttonBox_rejected();
     void on_buttonBox_helpRequested();
     void on_mOutputLayerToolButton_clicked();
+    void validateInput();
+
 
 
 };

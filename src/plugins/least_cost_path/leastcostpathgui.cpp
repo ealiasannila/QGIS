@@ -12,7 +12,6 @@
 #include "leastcostpathgui.h"
 #include "qgscontexthelp.h"
 #include "qgsmaplayerregistry.h"
-#include "qgsvectorlayer.h"
 #include <QSettings>
 #include <QDir>
 #include <QFileDialog>
@@ -23,25 +22,23 @@
 
 //standard includes
 
-LeastCostPathGui::LeastCostPathGui(QWidget* parent, Qt::WindowFlags fl) :
-		QDialog(parent, fl) {
-	setupUi(this);
+LeastCostPathGui::LeastCostPathGui( QWidget* parent, Qt::WindowFlags fl)
+    : QDialog( parent, fl )
 
-	//insert available vector layers
-	//enter available layers into the layer combo boxes
-	QMap<QString, QgsMapLayer*> mapLayers =
-			QgsMapLayerRegistry::instance()->mapLayers();
-	QMap<QString, QgsMapLayer*>::iterator layer_it = mapLayers.begin();
+{
+  setupUi( this );
+  QgsDebugMsg( QString( "Creating LCP Dialog" ) );
 
-	//insert available input layers
-	for (; layer_it != mapLayers.end(); ++layer_it) {
-		QgsVectorLayer* vl = qobject_cast<QgsVectorLayer *>(layer_it.value());
-		if (vl) {
-			mStartComboBox->addItem(vl->name(), QVariant(vl->id()));
-			mTargetComboBox->addItem(vl->name(), QVariant(vl->id()));
-			mCostSurfaceComboBox->addItem(vl->name(), QVariant(vl->id()));
-		}
-	}
+  mCostSurfaceComboBox->setFilters( QgsMapLayerProxyModel::PolygonLayer );
+  mStartComboBox->setFilters( QgsMapLayerProxyModel::PointLayer );
+  mTargetComboBox->setFilters( QgsMapLayerProxyModel::PointLayer );
+  connect( mCostSurfaceComboBox, SIGNAL( currentIndexChanged( int ) ), this, SLOT( validateInput() ) );
+}
+
+
+void LeastCostPathGui::validateInput()
+{
+    std::cout<<"validating..\n";
 
 }
 
@@ -52,7 +49,7 @@ void LeastCostPathGui::on_mOutputLayerToolButton_clicked() {
 	QString saveFileName = QFileDialog::getSaveFileName(nullptr,
 			tr("Enter output file"), lastDir);
 	if (!saveFileName.isNull()) {
-		mOutputLayerLineEdit->setText(saveFileName);
+        mOutputLayerLineEdit->setText(saveFileName);
 	}
 }
 
@@ -79,6 +76,25 @@ QString LeastCostPathGui::outputFile()
 }
 
 
+QgsVectorLayer* LeastCostPathGui::costSurfaceLayer() const
+{
+  QgsVectorLayer* layer = dynamic_cast<QgsVectorLayer*>( mCostSurfaceComboBox->currentLayer() );
+  return layer;
+}
+
+QgsVectorLayer *LeastCostPathGui::startLayer() const
+{
+    QgsVectorLayer* layer = dynamic_cast<QgsVectorLayer*>( mStartComboBox->currentLayer() );
+    return layer;
+
+}
+
+QgsVectorLayer *LeastCostPathGui::targetLayer() const
+{
+    QgsVectorLayer* layer = dynamic_cast<QgsVectorLayer*>( mTargetComboBox->currentLayer() );
+    return layer;
+
+}
 
 
 

@@ -42,10 +42,10 @@
     </widget>
    </item>
    <item row="0" column="1">
-    <widget class="QComboBox" name="mCostSurfaceComboBox"/>
+    <widget class="QgsMapLayerComboBox" name="mCostSurfaceComboBox"/>
    </item>
    <item row="2" column="1">
-    <widget class="QComboBox" name="mTargetComboBox"/>
+    <widget class="QgsMapLayerComboBox" name="mTargetComboBox"/>
    </item>
    <item row="4" column="0">
     <widget class="QLabel" name="mOutputLayerLabel">
@@ -55,7 +55,7 @@
     </widget>
    </item>
    <item row="1" column="1">
-    <widget class="QComboBox" name="mStartComboBox"/>
+    <widget class="QgsMapLayerComboBox" name="mStartComboBox"/>
    </item>
    <item row="0" column="0">
     <widget class="QLabel" name="mCostSurfaceLabel">
@@ -83,6 +83,13 @@
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>QgsMapLayerComboBox</class>
+   <extends>QComboBox</extends>
+   <header location="global">qgsmaplayercombobox.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections>
   <connection>

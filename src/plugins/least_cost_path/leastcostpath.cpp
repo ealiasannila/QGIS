@@ -102,6 +102,7 @@ int LeastCostPath::lcpmain(QgsVectorLayer* costSurface,QgsVectorLayer* startLaye
      * A*
      * Data structures: Coordsin naapurimappi, Coordmappi arrayksi? Coords luokka kokonaan pois?
      * Minheap, parempi update operaatio
+     * Spatial index
      *
      *TODO Integrate to QGIS plugin
      *TODO Implement A*
@@ -118,13 +119,40 @@ int LeastCostPath::lcpmain(QgsVectorLayer* costSurface,QgsVectorLayer* startLaye
     QgsFeatureIterator fitor = costSurface->getFeatures();
     QgsFeature f;
     std::vector<std::vector<std::vector<p2t::Point*>>> polygons;
-    std::vector<p2t::Point*> steinerPoints;
-
+    std::vector<Coords> targets;
+    Coords start;
     int pi = -1;
     while (fitor.nextFeature(f)) {
+
         pi++;
         polygons.push_back(std::vector<std::vector<p2t::Point*>>{});
         QgsGeometry geom = f.geometry();
+
+        QgsFeature tf;
+        QgsFeatureIterator tit = targetLayer->getFeatures();
+        while(tit.nextFeature(tf)){
+            QgsPoint point = tf.geometry().asPoint();
+            if(geom.contains(&point)){
+                p2t::Point* sp = new p2t::Point(point.x(),point.y());
+                targets.push_back(Coords(sp->x,sp->y));
+                finder.addSteinerPoint(sp,pi);
+            }
+
+        }
+
+
+        QgsFeature sf;
+        QgsFeatureIterator sit = startLayer->getFeatures();
+        sit.nextFeature(sf);
+        QgsPoint point = sf.geometry().asPoint();
+        if(geom.contains(&point)){
+            p2t::Point* sp = new p2t::Point(point.x(),point.y());
+            finder.addSteinerPoint(sp,pi);
+            start = Coords(sp->x,sp->y);
+        }
+
+
+
         QVector<QgsPolyline> rings = geom.asPolygon();
         int ri = -1;
         for (QVector<QgsPoint> points : rings) {
@@ -139,27 +167,10 @@ int LeastCostPath::lcpmain(QgsVectorLayer* costSurface,QgsVectorLayer* startLaye
         intermidiatePoints(&polygons.at(pi), 500);
         finder.addPolygon(polygons.at(pi), 1);
     }
-    std::vector<Coords> targets;
-    fitor = targetLayer->getFeatures();
-    while(fitor.nextFeature(f)){
-        QgsGeometry geom = f.geometry();
-        QgsPoint point = geom.asPoint();
-        targets.push_back(Coords(point.x(),point.y()));
-        p2t::Point* sp = new p2t::Point(point.x(),point.y());
-        finder.addSteinerPoint(sp,0);
-        steinerPoints.push_back(sp);
-    }
-
-    fitor = startLayer->getFeatures();
-    fitor.nextFeature(f);
-    QgsGeometry geom = f.geometry();
-    QgsPoint point = geom.asPoint();
-    p2t::Point* sp = new p2t::Point(point.x(),point.y());
-    finder.addSteinerPoint(sp,0);
-    steinerPoints.push_back(sp);
 
 
-    std::vector<Coords> results = finder.leastCostPath(Coords(point.x(),point.y()), targets);
+
+    std::vector<Coords> results = finder.leastCostPath(start, targets);
 
     //FREE STEINER POINTS AND POLYGONS
 

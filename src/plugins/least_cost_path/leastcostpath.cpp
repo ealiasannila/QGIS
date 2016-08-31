@@ -176,41 +176,73 @@ int LeastCostPath::lcpmain(QgsVectorLayer* costSurface,QgsVectorLayer* startLaye
 
 
 
-    std::vector<Coords> results = finder.leastCostPath(start, targets);
+    std::deque<const Coords*> results = finder.leastCostPath(start, targets);
 
     //STEINER POINTS AND POLYGONS FREED IN LEAST COST PATH DESTRUCTOR
-
     std::cout << "lcp done\n";
+    std::map<const Coords*, const Coords*> ancestors;
+    std::map<const Coords*, std::vector<double>> x;
+    std::map<const Coords*, std::vector<double>> y;
+
 
     SHPHandle hSHP = SHPCreate(outFile.toStdString().c_str(), SHPT_ARC);
     std::cout <<"handle created\n";
 
-    for (unsigned int i = 0; i<results.size(); i++) {
-        std::vector<double> x;
-        std::vector<double> y;
-        Coords goal = results[i];
-        std::cout<<"goal"<<goal.toString()<<std::endl;
-        while (goal.getPred() != 0) {
-            std::cout<<"in while!\n";
-            x.push_back(goal.getX());
-            y.push_back(goal.getY());
-            std::cout << "x: " << goal.getX() << " y: " << goal.getY() << "cost: " << goal.getToStart() << "\n";
-            goal = *goal.getPred();
+
+    std::cout<<"Initial insert:\n";
+    for(const Coords* point : results){
+        ancestors[point] = point;
+        x[point] = std::vector<double>{point->getX()};
+        y[point] = std::vector<double>{point->getY()};
+        std::cout<<point->toString()<<std::endl;
+    }
+
+    std::cout<<"Starting loop:\n";
+    while(!results.empty()){
+        const Coords* point = results.front();
+        const Coords* pred = point->getPred();
+
+        std::cout<<"Po: "<<point->toString()<<std::endl;
+        std::cout<<"Pr: "<<point->toString()<<std::endl;
+
+
+        results.pop_front();
+        if(pred == 0){
+            continue;
         }
-        x.push_back(goal.getX());
-        y.push_back(goal.getY());
-        std::cout << "x: " << goal.getX() << " y: " << goal.getY() << "cost: " << goal.getToStart() << "\n" ;
-        double *xp = &x[0];
-        double *yp = &y[0];
-        std::cout<<"size: "<<x.size()<<"\n";
-        SHPObject* psObject = SHPCreateSimpleObject(SHPT_ARC, x.size(),xp, yp, NULL );
-        int o = SHPWriteObject(hSHP, -1, psObject );
-        std::cout << "wrote: "<<o<<"\n";
-        SHPDestroyObject(psObject);
+
+        const Coords* ancestor = ancestors[point];
+        std::cout<<"An: "<<point->toString()<<std::endl;
+
+        if(ancestors.find(pred)!=ancestors.end()){
+            ancestors[pred] = pred;
+            x[pred] = std::vector<double>{pred->getX()};
+            y[pred] = std::vector<double>{pred->getY()};
+            std::cout<<"Adding point to pred: "<<pred->toString()<<std::endl;
+        }else{
+            ancestors[pred] = ancestor;
+            results.push_back(pred);
+        }
+        x[ancestor].push_back(pred->getX());
+        y[ancestor].push_back(pred->getY());
+        std::cout<<"Adding point to ancestor: "<<ancestor->toString()<<std::endl;
 
     }
-    SHPClose(hSHP);
+    std::cout<<"Paths mapped\n";
+    for(std::pair<const Coords*,std::vector<double>> xs : x){
+        std::vector<double> ys = y[xs.first];
 
+        std::cout<<"X pointer\n";
+        double *xp = &(xs.second[0]);
+        std::cout<<"Y pointer\n";
+        double *yp = &(ys[0]);
+
+        std::cout<<"Create SHP\n";
+        SHPObject* psObject = SHPCreateSimpleObject(SHPT_ARC, xs.second.size(),xp, yp, NULL );
+        std::cout<<"Write SHP\n";SHPWriteObject(hSHP, -1, psObject );
+        SHPDestroyObject(psObject);
+    }
+    SHPClose(hSHP);
 
     return 0;
 }

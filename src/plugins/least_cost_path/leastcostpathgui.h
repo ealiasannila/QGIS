@@ -31,9 +31,12 @@ class LeastCostPathGui : public QDialog, private Ui::LeastCostPathGuiBase
     QgsVectorLayer* costSurfaceLayer() const;
     QgsVectorLayer* startLayer() const;
     QgsVectorLayer* targetLayer() const;
+    int frictionAttrIdx();
     ~LeastCostPathGui();
-
-  private:
+    QgsVectorLayer *vectorLayerFromName(const QString &name);
+    double maxNodeDist();
+    bool addToProject();
+private:
     static const int context_id = 0;
 
   private slots:
@@ -41,7 +44,7 @@ class LeastCostPathGui : public QDialog, private Ui::LeastCostPathGuiBase
     void on_buttonBox_rejected();
     void on_buttonBox_helpRequested();
     void on_mOutputLayerToolButton_clicked();
-    void validateInput();
+    void updateFrictionField();
 
 
 

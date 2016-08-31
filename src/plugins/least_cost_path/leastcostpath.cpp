@@ -95,8 +95,8 @@ void LeastCostPath::help() {
 
 
 
-int LeastCostPath::lcpmain(QgsVectorLayer* costSurface,QgsVectorLayer* startLayer, QgsVectorLayer* targetLayer) {
-    QTextStream out(stdout);
+int LeastCostPath::lcpmain(QgsVectorLayer* costSurface,QgsVectorLayer* startLayer, QgsVectorLayer* targetLayer,
+                           QString outFile, int frictionAttrIdx, double maxNodeDist) {
     /*
      * HOW TO MAKE FAST:
      * A*
@@ -111,8 +111,11 @@ int LeastCostPath::lcpmain(QgsVectorLayer* costSurface,QgsVectorLayer* startLaye
      *TODO Performance...
      *
       */
-
-
+    std::cout<<costSurface->name().toStdString()<<std::endl;
+    std::cout<<targetLayer->name().toStdString()<<std::endl;
+    std::cout<<startLayer->name().toStdString()<<std::endl;
+    std::cout<<outFile.toStdString()<<std::endl;
+    std::cout<<frictionAttrIdx<<std::endl;
     LcpFinder finder;
 
 
@@ -164,21 +167,23 @@ int LeastCostPath::lcpmain(QgsVectorLayer* costSurface,QgsVectorLayer* startLaye
             }
             polygons.at(pi).at(ri).pop_back();
         }
-        intermidiatePoints(&polygons.at(pi), 500);
-        finder.addPolygon(polygons.at(pi), 1);
+        if(maxNodeDist > 0){
+            intermidiatePoints(&polygons.at(pi), maxNodeDist);
+        }
+        std::cout<<"Adding polygon with friction: "<<f.attribute(frictionAttrIdx).toDouble()<<std::endl;
+        finder.addPolygon(polygons.at(pi), f.attribute(frictionAttrIdx).toDouble());
     }
 
 
 
     std::vector<Coords> results = finder.leastCostPath(start, targets);
 
-    //FREE STEINER POINTS AND POLYGONS
+    //STEINER POINTS AND POLYGONS FREED IN LEAST COST PATH DESTRUCTOR
 
-    out << "lcp done\n";
+    std::cout << "lcp done\n";
 
-
-    SHPHandle hSHP = SHPCreate( "/home/elias/Desktop/lcp.shp", SHPT_ARC);
-    out <<"handle created\n";
+    SHPHandle hSHP = SHPCreate(outFile.toStdString().c_str(), SHPT_ARC);
+    std::cout <<"handle created\n";
 
     for (unsigned int i = 0; i<results.size(); i++) {
         std::vector<double> x;
@@ -189,23 +194,22 @@ int LeastCostPath::lcpmain(QgsVectorLayer* costSurface,QgsVectorLayer* startLaye
             std::cout<<"in while!\n";
             x.push_back(goal.getX());
             y.push_back(goal.getY());
-            out << "x: " << goal.getX() << " y: " << goal.getY() << "cost: " << goal.getToStart() << "\n";
+            std::cout << "x: " << goal.getX() << " y: " << goal.getY() << "cost: " << goal.getToStart() << "\n";
             goal = *goal.getPred();
         }
         x.push_back(goal.getX());
         y.push_back(goal.getY());
-        out << "x: " << goal.getX() << " y: " << goal.getY() << "cost: " << goal.getToStart() << "\n" ;
+        std::cout << "x: " << goal.getX() << " y: " << goal.getY() << "cost: " << goal.getToStart() << "\n" ;
         double *xp = &x[0];
         double *yp = &y[0];
-        out<<"size: "<<x.size()<<"\n";
+        std::cout<<"size: "<<x.size()<<"\n";
         SHPObject* psObject = SHPCreateSimpleObject(SHPT_ARC, x.size(),xp, yp, NULL );
         int o = SHPWriteObject(hSHP, -1, psObject );
-        out << "wrote: "<<o<<"\n";
+        std::cout << "wrote: "<<o<<"\n";
         SHPDestroyObject(psObject);
 
     }
     SHPClose(hSHP);
-    mQGisIface->addVectorLayer( "/home/elias/Desktop/lcp.shp", "LCP", "ogr");
 
 
     return 0;
@@ -232,8 +236,10 @@ void LeastCostPath::run() {
         return;
     }
 
-    lcpmain(d.costSurfaceLayer(), d.startLayer(), d.targetLayer());
-
+    lcpmain(d.costSurfaceLayer(), d.startLayer(), d.targetLayer(), d.outputFile(), d.frictionAttrIdx(),d.maxNodeDist());
+    if(d.addToProject()){
+        mQGisIface->addVectorLayer( d.outputFile(), "Least cost path", "ogr");
+    }
 }
 
 // Unload the plugin by cleaning up the GUI

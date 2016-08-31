@@ -100,7 +100,7 @@ class LeastCostPath: public QObject, public QgisPlugin
     // ADD YOUR OWN PROPERTY DECLARATIONS AFTER THIS POINT.....
     //
     ////////////////////////////////////////////////////////////////////
-    int lcpmain(QgsVectorLayer* costSurface, QgsVectorLayer *startLayer, QgsVectorLayer *targetLayer);
+    int lcpmain(QgsVectorLayer* costSurface, QgsVectorLayer *startLayer, QgsVectorLayer *targetLayer, QString outLayer, int frictionAttrIdx, double maxNodeDist);
 };
 
 #endif //LeastCostPath_H
